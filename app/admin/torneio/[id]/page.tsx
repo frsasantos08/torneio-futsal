@@ -1,0 +1,116 @@
+'use client'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { getSession } from '@/lib/auth'
+import type { Torneio } from '@/lib/torneio'
+
+type MenuItem = { icon: string; label: string; desc: string; href: string; color: string }
+
+export default function AdminTorneioPage({ params }: { params: { id: string } }) {
+  const router = useRouter()
+  const [session, setSession] = useState<ReturnType<typeof getSession>>(null)
+  const [torneio, setTorneio] = useState<Torneio | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const s = getSession()
+    setSession(s)
+    if (!s) { router.push('/admin'); return }
+    fetch(`/api/torneio/${params.id}`, { headers: { 'X-Admin-Id': s.admin_id } })
+      .then(r => r.json()).then(d => { setTorneio(d); setLoading(false) })
+  }, [params.id, router])
+
+  const menuItems: MenuItem[] = [
+    {
+      icon: '⚽',
+      label: 'Equipas',
+      desc: 'Definir nomes e grupos das equipas',
+      href: `/admin/torneio/${params.id}/equipas`,
+      color: 'rgba(34,197,94,0.15)',
+    },
+    {
+      icon: '📅',
+      label: 'Calendário',
+      desc: 'Ver e editar horários dos jogos',
+      href: `/admin/torneio/${params.id}/calendario`,
+      color: 'rgba(59,130,246,0.15)',
+    },
+    {
+      icon: '📊',
+      label: 'Rankings em Tempo Real',
+      desc: 'Melhor ataque, defesa, disciplina',
+      href: `/admin/torneio/${params.id}/rankings`,
+      color: 'rgba(168,85,247,0.15)',
+    },
+    {
+      icon: '🏆',
+      label: 'Troféus',
+      desc: 'Confirmar e gerir prémios',
+      href: `/admin/torneio/${params.id}/trofeus`,
+      color: 'rgba(251,191,36,0.15)',
+    },
+  ]
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ color: 'var(--muted)' }}>
+      A carregar...
+    </div>
+  )
+
+  return (
+    <div className="min-h-screen p-4 max-w-2xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 pt-2">
+        <button onClick={() => router.push('/admin')} className="text-sm font-semibold"
+                style={{ color: 'var(--muted)' }}>← Torneios</button>
+        {session && (
+          <span className="text-xs px-3 py-1.5 rounded-lg font-semibold"
+                style={{ background: 'var(--card)', color: 'var(--accent)' }}>{session.nome}</span>
+        )}
+      </div>
+
+      {/* Torneio Header */}
+      {torneio && (
+        <div className="card p-5 mb-6">
+          <div className="flex items-center gap-4">
+            {torneio.logo_url && (
+              <img src={torneio.logo_url} alt="" className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
+            )}
+            <div>
+              <h1 className="text-xl font-extrabold text-white">{torneio.nome}</h1>
+              <p className="text-sm" style={{ color: 'var(--muted)' }}>{torneio.organizador}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+                {new Date(torneio.data_inicio).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' })}
+                {' – '}
+                {new Date(torneio.data_fim).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                ⚽ {torneio.formato} equipas · {torneio.num_grupos} grupos de {torneio.equipas_por_grupo}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Menu */}
+      <div className="space-y-3">
+        {menuItems.map(item => (
+          <button key={item.href} onClick={() => router.push(item.href)}
+                  className="w-full card p-4 text-left hover:scale-[1.01] transition-transform">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+                   style={{ background: item.color }}>
+                {item.icon}
+              </div>
+              <div className="flex-1">
+                <div className="font-bold text-white">{item.label}</div>
+                <div className="text-sm" style={{ color: 'var(--muted)' }}>{item.desc}</div>
+              </div>
+              <span style={{ color: 'var(--muted)' }}>›</span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}

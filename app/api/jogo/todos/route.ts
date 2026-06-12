@@ -1,0 +1,21 @@
+export const dynamic = 'force-dynamic'
+
+import { NextResponse } from 'next/server'
+import { createServiceClient } from '@/lib/supabase'
+
+export async function GET(req: Request) {
+  const supabase = createServiceClient()
+  const { searchParams } = new URL(req.url)
+  const torneioId = searchParams.get('torneio_id')
+
+  let query = supabase.from('jogos').select('*').order('numero_jogo', { ascending: true })
+  if (torneioId) {
+    query = query.eq('torneio_id', torneioId)
+  } else {
+    query = query.is('torneio_id', null)
+  }
+
+  const { data, error } = await query
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(data ?? [])
+}
