@@ -162,8 +162,23 @@ export default function SuperadminPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-xs font-bold px-2 py-1 rounded-full"
-                                style={{ background: badge.bg, color: badge.color }}>{badge.label}</span>
+                          {/* Badge clicável para ciclar status */}
+                          <button
+                            onClick={async () => {
+                              const next = t.status === 'rascunho' ? 'ativo' : t.status === 'ativo' ? 'finalizado' : 'rascunho'
+                              await fetch(`/api/torneio/${t.id}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json', 'X-Admin-Id': session!.admin_id },
+                                body: JSON.stringify({ status: next }),
+                              })
+                              setTorneios(prev => prev.map(x => x.id === t.id ? { ...x, status: next } : x))
+                              showMsg(`✅ Status: ${next}`)
+                            }}
+                            className="text-xs font-bold px-2 py-1 rounded-full transition-opacity hover:opacity-70"
+                            style={{ background: badge.bg, color: badge.color }}
+                            title="Clica para mudar status">
+                            {badge.label} ↻
+                          </button>
                           <button onClick={() => router.push(`/admin/torneio/${t.id}`)}
                                   className="text-xs px-3 py-1.5 rounded-lg font-semibold"
                                   style={{ background: 'var(--accent)', color: '#000' }}>
