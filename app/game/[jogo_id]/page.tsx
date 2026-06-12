@@ -101,9 +101,21 @@ export default function LiveGamePage() {
     }
   }
 
-  const handleIniciar = () => {
-    console.log('[handleIniciar] jogoId:', jogoId, 'session:', session, 'actionLoading:', actionLoading)
-    doAction(() => api.iniciarJogo(jogoId), 'Jogo iniciado!')
+  const handleIniciar = async () => {
+    if (actionLoading) return
+    setActionLoading(true)
+    try {
+      await api.iniciarJogo(jogoId)
+      // Atualizar estado local imediatamente sem esperar pelo loadEstado
+      setJogo(prev => prev ? { ...prev, status: 'decorrer' } : prev)
+      showToast('✅ Jogo iniciado!')
+      // Também recarregar para garantir dados frescos
+      setTimeout(() => loadEstado(), 500)
+    } catch (e: unknown) {
+      showToast(`❌ ${e instanceof Error ? e.message : 'Erro ao iniciar'}`)
+    } finally {
+      setActionLoading(false)
+    }
   }
   const handleFinalizar = () => {
     if (!confirm('Finalizar o jogo?')) return
