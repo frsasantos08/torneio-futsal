@@ -14,6 +14,36 @@ type EquipaSlot = {
 
 type Torneio = { formato: FormatoTorneio; nome: string }
 
+function SlotRow({ e, onEdit, onConfirm }: { e: EquipaSlot; onEdit: () => void; onConfirm: () => void }) {
+  const temNomeReal = !!(e.nome && e.nome !== e.slot)
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <span className="text-xs font-bold w-8 text-center py-1 rounded-lg"
+              style={{ background: 'var(--border)', color: 'var(--muted)' }}>{e.slot}</span>
+        <span className="font-semibold" style={{ color: temNomeReal ? 'white' : 'var(--muted)' }}>
+          {temNomeReal ? e.nome : 'Por definir...'}
+        </span>
+        {temNomeReal && e.confirmada && (
+          <span className="text-xs" style={{ color: '#4ade80' }}>✓</span>
+        )}
+      </div>
+      <div className="flex gap-2">
+        {temNomeReal && !e.confirmada && (
+          <button onClick={onConfirm} className="text-xs px-2 py-1 rounded-lg"
+                  style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>
+            Confirmar
+          </button>
+        )}
+        <button onClick={onEdit} className="text-xs px-2 py-1 rounded-lg"
+                style={{ background: temNomeReal ? 'var(--border)' : 'rgba(30,144,255,0.15)', color: temNomeReal ? 'var(--muted)' : 'var(--accent)' }}>
+          {temNomeReal ? '✏️' : '+ Nome'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function EquipasPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [session, setSession] = useState<ReturnType<typeof getSession>>(null)
@@ -125,39 +155,11 @@ export default function EquipasPage({ params }: { params: { id: string } }) {
                             style={{ background: 'var(--border)', color: 'var(--muted)' }}>✕</button>
                   </div>
                 ) : (
-                  {(() => {
-                    // Considera "sem nome" se null ou igual ao slot (ex: "A1")
-                    const temNomeReal = e.nome && e.nome !== e.slot
-                    return (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs font-bold w-8 text-center py-1 rounded-lg"
-                                style={{ background: 'var(--border)', color: 'var(--muted)' }}>{e.slot}</span>
-                          <span className="font-semibold"
-                                style={{ color: temNomeReal ? 'white' : 'var(--muted)' }}>
-                            {temNomeReal ? e.nome : 'Por definir...'}
-                          </span>
-                          {temNomeReal && e.confirmada && (
-                            <span className="text-xs" style={{ color: '#4ade80' }}>✓</span>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          {temNomeReal && !e.confirmada && (
-                            <button onClick={() => handleConfirm(e.id)}
-                                    className="text-xs px-2 py-1 rounded-lg"
-                                    style={{ background: 'rgba(34,197,94,0.15)', color: '#4ade80' }}>
-                              Confirmar
-                            </button>
-                          )}
-                          <button onClick={() => setEditando(e.id)}
-                                  className="text-xs px-2 py-1 rounded-lg"
-                                  style={{ background: temNomeReal ? 'var(--border)' : 'rgba(30,144,255,0.15)', color: temNomeReal ? 'var(--muted)' : 'var(--accent)' }}>
-                            {temNomeReal ? '✏️' : '+ Nome'}
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })()}
+                  <SlotRow
+                    e={e}
+                    onEdit={() => setEditando(e.id)}
+                    onConfirm={() => handleConfirm(e.id)}
+                  />
                 )}
               </div>
             ))}
