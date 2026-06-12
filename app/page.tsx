@@ -30,16 +30,31 @@ export default function HomePage() {
   const [pendingJogoId, setPendingJogoId] = useState<string | null>(null)
   const [session, setSession] = useState<ReturnType<typeof getSession>>(null)
 
+  const [torneioId, setTorneioId] = useState<string | null>(null)
+  const [torneioInfo, setTorneioInfo] = useState<{ nome: string; data_inicio: string; data_fim: string } | null>(null)
+
   const load = async () => {
     try {
+      // Buscar torneio ativo primeiro
+      const cfg = await fetch('/api/config/torneio-ativo').then(r => r.json()).catch(() => null)
+      const tid = cfg?.torneio_id ?? null
+      setTorneioId(tid)
+
+      if (tid) {
+        fetch(`/api/torneio/${tid}`).then(r => r.json()).then(t => {
+          if (t?.nome) setTorneioInfo({ nome: t.nome, data_inicio: t.data_inicio, data_fim: t.data_fim })
+        })
+      }
+
+      const param = tid ? `?torneio_id=${tid}` : ''
       const [prox, atual, todos] = await Promise.all([
-        api.proximosJogos(),
-        api.jogoAtual(),
-        api.todosJogos(),
+        fetch(`/api/jogo/proximos${param}`).then(r => r.json()).catch(() => []),
+        fetch(`/api/jogo/atual${param}`).then(r => r.json()).catch(() => null),
+        fetch(`/api/jogo/todos${param}`).then(r => r.json()).catch(() => []),
       ])
-      setProximos(prox ?? [])
-      setJogoAtual(atual)
-      const finalizados = (todos as Jogo[]).filter(j => j.status === 'finalizado')
+      setProximos(Array.isArray(prox) ? prox : [])
+      setJogoAtual(atual?.id ? atual : null)
+      const finalizados = (Array.isArray(todos) ? todos as Jogo[] : []).filter(j => j.status === 'finalizado')
         .sort((a, b) => (b.numero_jogo ?? 0) - (a.numero_jogo ?? 0))
       setConcluidos(finalizados)
     } catch (e) {
@@ -208,8 +223,14 @@ export default function HomePage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 pt-2">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">⚽ Torneio Futsal</h1>
-          <p className="text-sm" style={{ color: 'var(--muted)' }}>20-21 Junho 2026</p>
+          <h1 className="text-2xl font-extrabold text-white">⚽ {torneioInfo?.nome ?? 'Torneio Futsal'}</h1>
+          {torneioInfo && (
+            <p className="text-sm" style={{ color: 'var(--muted)' }}>
+              {new Date(torneioInfo.data_inicio).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' })}
+              {' – '}
+              {new Date(torneioInfo.data_fim).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <a href="/tv" className="text-xs px-3 py-2 rounded-lg border font-semibold"
