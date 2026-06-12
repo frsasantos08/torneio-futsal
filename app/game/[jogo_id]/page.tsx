@@ -273,7 +273,6 @@ export default function LiveGamePage() {
           </button>
         </div>
       )}
-    </div>
 
       {/* Popup Vermelho */}
       {vermelhoPopup && (
