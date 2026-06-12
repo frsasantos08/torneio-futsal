@@ -1,26 +1,12 @@
 export const GRUPOS = ['A', 'B', 'C'] as const
 
-// Mapa de código de equipa → nome completo
-// equipa_a_nome no Supabase tem valores como "A1", "B2", etc.
-export const EQUIPAS: Record<string, { nome: string; grupo: string }> = {
-  A1: { nome: 'ALGERIZ',      grupo: 'A' },
-  A2: { nome: 'MARCOPINTA',   grupo: 'A' },
-  A3: { nome: 'TÁ-LENTO',     grupo: 'A' },
-  A4: { nome: 'OS PRIMOS',    grupo: 'A' },
-  B1: { nome: 'CAÇADORES',    grupo: 'B' },
-  B2: { nome: 'FERREIROS',    grupo: 'B' },
-  B3: { nome: 'MOTOR FC',     grupo: 'B' },
-  B4: { nome: 'FAMÍLIA',      grupo: 'B' },
-  C1: { nome: 'PENEDONES',    grupo: 'C' },
-  C2: { nome: 'BENFIQUISTAS', grupo: 'C' },
-  C3: { nome: 'OS AMIGOS',    grupo: 'C' },
-  C4: { nome: 'LAST MINUTE',  grupo: 'C' },
-}
+// Nomes hardcoded removidos — os nomes vêm diretamente da BD (equipa_a_nome / equipa_b_nome)
+export const EQUIPAS: Record<string, { nome: string; grupo: string }> = {}
 
-/** Resolve o nome de exibição: "A1" → "ALGERIZ", ou devolve o valor tal como está */
+/** Devolve o nome tal como está na BD — já não faz conversão de slot para nome */
 export function resolveNomeEquipa(codigo?: string | null): string {
   if (!codigo) return '?'
-  return EQUIPAS[codigo]?.nome ?? codigo
+  return codigo
 }
 
 export type JogoStatus = 'pendente' | 'decorrer' | 'finalizado'
