@@ -238,12 +238,18 @@ export default function HomePage() {
             📺 TV
           </a>
           {session && (
-            <button onClick={handleRecalcular}
-                    className="text-xs px-3 py-2 rounded-lg border font-semibold"
-                    style={{ borderColor: 'rgba(234,179,8,0.4)', color: '#eab308' }}
-                    title="Recalcular classificação do zero">
-              🔄
-            </button>
+            <>
+              <button onClick={handleRecalcular}
+                      className="text-xs px-3 py-2 rounded-lg border font-semibold"
+                      style={{ borderColor: 'rgba(234,179,8,0.4)', color: '#eab308' }}
+                      title="Recalcular classificação do zero">
+                🔄
+              </button>
+              <a href="/admin" className="text-xs px-3 py-2 rounded-lg border font-semibold"
+                 style={{ borderColor: 'rgba(59,130,246,0.4)', color: '#60a5fa' }}>
+                ⚙️ Admin
+              </a>
+            </>
           )}
           {!session ? (
             <button onClick={() => setShowLogin(true)} className="btn-primary text-sm py-2">
