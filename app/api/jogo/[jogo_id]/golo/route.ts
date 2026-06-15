@@ -25,7 +25,7 @@ export async function POST(req: Request, { params }: { params: { jogo_id: string
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
   if (!updated || updated.length === 0) return NextResponse.json({ error: 'Jogo não encontrado para update' }, { status: 404 })
 
-  const { error: histErr } = await supabase.from('historico_acoes').insert({ jogo_id: jogoId, tipo: 'golo', equipa, admin_id: adminId, valor_anterior: novoValor - 1, valor_novo: novoValor })
+  const { error: histErr } = await supabase.from('historico_acoes').insert({ jogo_id: jogoId, tipo: 'golo', equipa, valor_anterior: novoValor - 1, valor_novo: novoValor })
   if (histErr) console.error('[golo] historico insert error:', histErr.message)
   supabase.from('admin_logs').insert({ admin_id: adminId, acao: 'golo', jogo_id: jogoId, detalhes: { equipa, novo_valor: novoValor } }).then(() => {})
 

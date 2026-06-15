@@ -44,7 +44,7 @@ export async function POST(req: Request, { params }: { params: { jogo_id: string
     ? (updates[`amarelos_${equipa}`] ?? valorAnterior)
     : (updates[`vermelhos_${equipa}`] ?? valorAnterior)
   const { error: histErr } = await supabase.from('historico_acoes').insert({
-    jogo_id: jogoId, tipo, equipa, admin_id: adminId,
+    jogo_id: jogoId, tipo, equipa,
     valor_anterior: valorAnterior,
     valor_novo: valorNovo,
   })

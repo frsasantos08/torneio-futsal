@@ -14,7 +14,7 @@ export async function POST(req: Request, { params }: { params: { jogo_id: string
 
   const { data: ultimaAcao } = await supabase
     .from('historico_acoes').select('*').eq('jogo_id', jogoId)
-    .order('created_at', { ascending: false }).limit(1).maybeSingle()
+    .order('timestamp', { ascending: false }).limit(1).maybeSingle()
 
   if (!ultimaAcao) return NextResponse.json({ error: 'Sem ações para desfazer' }, { status: 400 })
 

@@ -9,8 +9,7 @@ interface Props {
   equipaBNome?: string
 }
 
-function fmtTime(acao: HistoricoAcao) {
-  const ts = acao.created_at ?? acao.timestamp ?? ''
+function fmtTime(ts: string) {
   return ts ? new Date(ts).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '--:--'
 }
 
@@ -32,7 +31,7 @@ export default function HistoricoAcoes({ historico, equipaANome, equipaBNome }: 
               {resolveNomeEquipa(acao.equipa === 'a' ? equipaANome : equipaBNome)}
             </span>
           </div>
-          <span className="text-xs" style={{ color: 'var(--muted)' }}>{fmtTime(acao)}</span>
+          <span className="text-xs" style={{ color: 'var(--muted)' }}>{fmtTime(acao.timestamp)}</span>
         </div>
       ))}
     </div>
