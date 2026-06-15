@@ -9,26 +9,22 @@ export async function POST(req: Request) {
 
   if (!torneio_id) return NextResponse.json({ error: 'torneio_id obrigatório' }, { status: 400 })
 
-  // Recolher todas as equipas únicas dos jogos de grupos deste torneio
-  const { data: jogos, error } = await supabase
-    .from('jogos')
-    .select('equipa_a_id, equipa_b_id, grupo')
+  // Recolher equipas diretamente da tabela equipas
+  const { data: equipasRows, error } = await supabase
+    .from('equipas')
+    .select('id, grupo')
     .eq('torneio_id', torneio_id)
-    .eq('fase', 'grupos')
-    .not('equipa_a_id', 'is', null)
-    .not('equipa_b_id', 'is', null)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   // Mapa equipa_id -> grupo
   const equipas: Record<string, string> = {}
-  for (const j of jogos ?? []) {
-    if (j.equipa_a_id) equipas[j.equipa_a_id] = j.grupo ?? 'A'
-    if (j.equipa_b_id) equipas[j.equipa_b_id] = j.grupo ?? 'A'
+  for (const e of equipasRows ?? []) {
+    equipas[e.id] = e.grupo ?? 'A'
   }
 
   if (Object.keys(equipas).length === 0) {
-    return NextResponse.json({ error: 'Sem equipas encontradas nos jogos de grupos' }, { status: 400 })
+    return NextResponse.json({ error: 'Sem equipas encontradas para este torneio' }, { status: 400 })
   }
 
   // Para cada equipa, inserir linha se ainda não existir
