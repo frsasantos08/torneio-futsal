@@ -128,8 +128,8 @@ export default function CalendarioAdminPage({ params }: { params: { id: string }
         <h1 className="text-lg font-extrabold text-white">📅 Calendário</h1>
         <button onClick={handleGerar} disabled={gerando}
                 className="text-xs px-3 py-1.5 rounded-lg font-semibold"
-                style={{ background: 'var(--accent)', color: '#000' }}>
-          {gerando ? '⏳' : '🔄 Gerar'}
+                style={{ background: jogos.length > 0 ? 'rgba(239,68,68,0.2)' : 'var(--accent)', color: jogos.length > 0 ? '#f87171' : '#000', border: jogos.length > 0 ? '1px solid rgba(239,68,68,0.4)' : 'none' }}>
+          {gerando ? '⏳ A gerar...' : jogos.length > 0 ? '🔄 Regenerar' : '🔄 Gerar'}
         </button>
       </div>
 
