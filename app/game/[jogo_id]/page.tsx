@@ -62,7 +62,10 @@ export default function LiveGamePage() {
       if (res.locked) setLockWarning(`Jogo aberto por ${res.by}`)
     }).catch(() => {})
 
-    const unsub = subscribeJogo(jogoId, () => { loadEstado() })
+    // Usar dados do realtime diretamente (igual à TV) — evita cache HTTP
+    const unsub = subscribeJogo(jogoId, (jogoAtualizado) => {
+      setJogo(jogoAtualizado)
+    })
 
     const handleUnload = () => api.unlockJogo(jogoId)
     window.addEventListener('beforeunload', handleUnload)
@@ -83,18 +86,17 @@ export default function LiveGamePage() {
   }, [jogoId])
 
   const doAction = async (fn: () => Promise<unknown>, label: string) => {
-    console.log('[doAction] START', label, 'actionLoading:', actionLoading, 'isDecoller:', jogo?.status)
-    if (actionLoading) { console.log('[doAction] BLOCKED by actionLoading'); return }
+    if (actionLoading) return
     setActionLoading(true)
     try {
-      console.log('[doAction] calling fn...')
-      const result = await fn()
-      console.log('[doAction] fn result:', result)
-      await new Promise(r => setTimeout(r, 300))
-      await loadEstado()
+      await fn()
+      // O realtime (subscribeJogo) atualiza o jogo automaticamente
+      // Só precisamos de recarregar o histórico
+      await new Promise(r => setTimeout(r, 400))
+      const data = await api.jogoEstado(jogoId).catch(() => null)
+      if (data?.historico) setHistorico(data.historico)
       showToast(`✅ ${label}`)
     } catch (e: unknown) {
-      console.error('[doAction] ERROR:', e)
       showToast(`❌ ${e instanceof Error ? e.message : 'Erro'}`)
     } finally {
       setActionLoading(false)

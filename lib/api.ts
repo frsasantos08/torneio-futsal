@@ -22,7 +22,7 @@ export const api = {
   proximosJogos: () => apiFetch('/api/jogo/proximos'),
   todosJogos: () => apiFetch('/api/jogo/todos'),
   jogoAtual: () => apiFetch('/api/jogo/atual'),
-  jogoEstado: (id: string) => apiFetch(`/api/jogo/${id}/estado`),
+  jogoEstado: (id: string) => apiFetch(`/api/jogo/${id}/estado?t=${Date.now()}`),
 
   golo: (id: string, equipa: 'a' | 'b') =>
     apiFetch(`/api/jogo/${id}/golo`, { method: 'POST', body: JSON.stringify({ equipa }) }),
