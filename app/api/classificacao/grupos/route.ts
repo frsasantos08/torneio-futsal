@@ -9,35 +9,28 @@ export async function GET(req: Request) {
   const torneioId = searchParams.get('torneio_id')
 
   const classifQuery = supabase.from('classificacao_grupos').select('*').order('grupo').order('pontos', { ascending: false })
-  const jogosQuery = supabase.from('jogos').select('equipa_a_id, equipa_a_nome, equipa_b_id, equipa_b_nome')
+  let equipasQuery = supabase.from('equipas').select('id, nome, slot')
 
   if (torneioId) {
     classifQuery.eq('torneio_id', torneioId)
-    jogosQuery.eq('torneio_id', torneioId)
-  } else {
-    classifQuery.is('torneio_id', null)
-    jogosQuery.is('torneio_id', null)
+    equipasQuery = equipasQuery.eq('torneio_id', torneioId)
   }
 
-  const [{ data, error }, { data: jogosData }] = await Promise.all([classifQuery, jogosQuery])
+  const [{ data, error }, { data: equipasData }] = await Promise.all([classifQuery, equipasQuery])
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Mapa equipa_id -> nome (a partir dos jogos)
+  // Mapa equipa_id -> nome (a partir da tabela equipas)
   const equipaMap: Record<string, string> = {}
-  for (const j of jogosData ?? []) {
-    if (j.equipa_a_id && j.equipa_a_nome) equipaMap[j.equipa_a_id] = j.equipa_a_nome
-    if (j.equipa_b_id && j.equipa_b_nome) equipaMap[j.equipa_b_id] = j.equipa_b_nome
+  for (const e of equipasData ?? []) {
+    // Usar nome se diferente do slot (nome real), senão usar slot
+    equipaMap[e.id] = (e.nome && e.nome !== e.slot) ? e.nome : e.slot
   }
-
-  // Importar resolveNomeEquipa para converter código em nome completo
-  const { resolveNomeEquipa } = await import('@/lib/constants')
 
   const grupos: Record<string, object[]> = {}
   for (const row of data ?? []) {
     const grupo = (row.grupo as string) ?? 'A'
-    const codigo = equipaMap[row.equipa_id] ?? null
-    const nome = resolveNomeEquipa(codigo)
+    const nome = equipaMap[row.equipa_id] ?? row.equipa_id
     ;(grupos[grupo] ??= []).push({
       ...row,
       nome,

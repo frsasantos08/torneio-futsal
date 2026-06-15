@@ -230,7 +230,7 @@ export default function TVGrupos({ todosJogos, grupos, jogoAtual }: Props) {
             width: '400px', display: 'flex', flexDirection: 'column',
             gap: '6px', padding: '0 16px 0 8px', overflowY: 'auto', scrollbarWidth: 'none',
           }}>
-            {(['A', 'B', 'C'] as const).map(grupo => (
+            {Object.keys(grupos).sort().map(grupo => (
               <GrupoCard key={grupo} grupo={grupo} equipas={grupos[grupo] ?? []} />
             ))}
           </div>
