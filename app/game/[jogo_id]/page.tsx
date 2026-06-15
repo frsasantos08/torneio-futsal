@@ -106,8 +106,18 @@ export default function LiveGamePage() {
     setActionLoading(true)
     try {
       await api.iniciarJogo(jogoId)
-      // Forçar estado local para decorrer imediatamente
+      // Forçar estado local imediatamente
       setJogo(prev => prev ? { ...prev, status: 'decorrer' as const } : prev)
+      // Confirmar com DB (retry até 2s)
+      for (let i = 0; i < 8; i++) {
+        await new Promise(r => setTimeout(r, 250))
+        const data = await api.jogoEstado(jogoId).catch(() => null)
+        if (data?.jogo?.status === 'decorrer') {
+          setJogo(data.jogo)
+          setHistorico(data.historico ?? [])
+          break
+        }
+      }
       showToast('✅ Jogo iniciado!')
     } catch (e: unknown) {
       showToast(`❌ ${e instanceof Error ? e.message : 'Erro ao iniciar'}`)
