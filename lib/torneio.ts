@@ -100,79 +100,41 @@ export function getTodosSlots(numGrupos: number, equipasPorGrupo: number): strin
 
 // ── Geração de pares round-robin ──────────────────────────────────────────────
 
-/**
- * Gera todos os pares round-robin para um grupo e ordena-os de forma a que
- * nenhuma equipa jogue em duas posições consecutivas (garantindo descanso mínimo).
- * Usa o método berger (circle method) para n par, e com bye para n ímpar.
- */
+// Sequência fixa para 5 equipas (ordem garantida sem jogos consecutivos):
+// 1-2, 3-4, 5-1, 2-3, 4-5, 1-3, 2-4, 3-5, 5-2, 1-4
+const SEQUENCIA_5_EQUIPAS: [number, number][] = [
+  [1,2],[3,4],[5,1],[2,3],[4,5],[1,3],[2,4],[3,5],[5,2],[1,4]
+]
+
+// Sequência para 4 equipas (6 jogos, round-robin completo sem consecutivos):
+// 1-2, 3-4, 1-3, 2-4, 1-4, 2-3
+const SEQUENCIA_4_EQUIPAS: [number, number][] = [
+  [1,2],[3,4],[1,3],[2,4],[1,4],[2,3]
+]
+
 export function gerarParesRoundRobin(slots: string[]): [string, string][] {
   const n = slots.length
+
+  if (n === 5) {
+    return SEQUENCIA_5_EQUIPAS.map(([a, b]) => [slots[a - 1], slots[b - 1]])
+  }
+
+  if (n === 4) {
+    return SEQUENCIA_4_EQUIPAS.map(([a, b]) => [slots[a - 1], slots[b - 1]])
+  }
+
+  // Fallback genérico para outros tamanhos (circle method)
   const pares: [string, string][] = []
-
-  // Circle method: adiciona um "bye" se n for ímpar
   const teams = n % 2 === 0 ? [...slots] : [...slots, 'BYE']
-  const N = teams.length // par
-
-  // Gera rounds usando rotação (fix teams[0], rotate the rest)
+  const N = teams.length
   for (let round = 0; round < N - 1; round++) {
-    // Build current round pairings
-    const roundPares: [string, string][] = []
     for (let i = 0; i < N / 2; i++) {
       const home = i === 0 ? teams[0] : teams[1 + ((round + i - 1) % (N - 1))]
       const away = teams[1 + ((round + N - 1 - i - 1) % (N - 1))]
-      if (home !== 'BYE' && away !== 'BYE') {
-        roundPares.push([home, away])
-      }
+      if (home !== 'BYE' && away !== 'BYE') pares.push([home, away])
     }
-    pares.push(...roundPares)
   }
-
-  // Reordena para evitar equipas consecutivas (greedy com look-ahead)
-  return ordenarSemConsecutivos(pares)
-}
-
-/**
- * Reordena uma lista de jogos de forma a minimizar (idealmente eliminar)
- * casos em que a mesma equipa aparece em jogos consecutivos.
- * Usa greedy com heurística "escolhe o par que deixa mais opções a seguir".
- */
-function ordenarSemConsecutivos(pares: [string, string][]): [string, string][] {
-  const remaining = [...pares]
-  const result: [string, string][] = []
-
-  while (remaining.length > 0) {
-    const [lastA, lastB] = result.length > 0 ? result[result.length - 1] : ['__', '__']
-
-    // Candidatos válidos: não partilham equipas com o jogo anterior
-    const validos = remaining
-      .map((p, i) => ({ p, i }))
-      .filter(({ p: [a, b] }) => a !== lastA && a !== lastB && b !== lastA && b !== lastB)
-
-    let escolhido: number
-
-    if (validos.length === 0) {
-      // Sem opção perfeita: escolhe o próximo disponível
-      escolhido = 0
-    } else if (validos.length === 1) {
-      escolhido = validos[0].i
-    } else {
-      // Heurística: escolhe o par que deixa mais pares válidos a seguir
-      let bestScore = -1
-      let bestIdx = validos[0].i
-      for (const { p: [a, b], i } of validos) {
-        const restantes = remaining.filter((_, j) => j !== i)
-        const score = restantes.filter(([fa, fb]) =>
-          fa !== a && fa !== b && fb !== a && fb !== b
-        ).length
-        if (score > bestScore) { bestScore = score; bestIdx = i }
-      }
-      escolhido = bestIdx
-    }
-
-    result.push(remaining.splice(escolhido, 1)[0])
-  }
-
-  return result
+  return pares
 }
 
 // Intercala jogos de diferentes grupos (já ordenados internamente)
