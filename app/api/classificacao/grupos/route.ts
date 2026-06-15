@@ -33,11 +33,11 @@ export async function GET(req: Request) {
   // Importar resolveNomeEquipa para converter código em nome completo
   const { resolveNomeEquipa } = await import('@/lib/constants')
 
-  const grupos: Record<string, object[]> = { A: [], B: [], C: [] }
+  const grupos: Record<string, object[]> = {}
   for (const row of data ?? []) {
     const grupo = (row.grupo as string) ?? 'A'
-    const codigo = equipaMap[row.equipa_id] ?? null  // ex: "A1"
-    const nome = resolveNomeEquipa(codigo)             // ex: "ALGERIZ"
+    const codigo = equipaMap[row.equipa_id] ?? null
+    const nome = resolveNomeEquipa(codigo)
     ;(grupos[grupo] ??= []).push({
       ...row,
       nome,

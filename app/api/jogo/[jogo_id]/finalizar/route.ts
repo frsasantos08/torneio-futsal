@@ -5,10 +5,13 @@ import { createServiceClient } from '@/lib/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Recalcula posicao dentro de um grupo com base nos totais actuais
-async function recalcularPosicoes(supabase: SupabaseClient, grupo: string) {
-  const { data: linhas } = await supabase
+async function recalcularPosicoes(supabase: SupabaseClient, grupo: string, torneioId: string | null) {
+  let q = supabase
     .from('classificacao_grupos').select('equipa_id, pontos, golos_marcados, golos_sofridos')
     .eq('grupo', grupo)
+  if (torneioId) q = q.eq('torneio_id', torneioId)
+  else q = q.is('torneio_id', null)
+  const { data: linhas } = await q
   if (!linhas?.length) return
 
   linhas.sort((a, b) => {
@@ -48,8 +51,10 @@ export async function POST(req: Request, { params }: { params: { jogo_id: string
       equipaId: string, gM: number, gS: number, pts: number,
       amarelosEq: number, vermelhosEq: number, faltasEq: number,
     ) => {
-      const { data: atual, error: lerErr } = await supabase
-        .from('classificacao_grupos').select('*').eq('equipa_id', equipaId).single()
+      let lerQ = supabase.from('classificacao_grupos').select('*').eq('equipa_id', equipaId)
+      if (jogo.torneio_id) lerQ = lerQ.eq('torneio_id', jogo.torneio_id)
+      else lerQ = lerQ.is('torneio_id', null)
+      const { data: atual, error: lerErr } = await lerQ.single()
       if (lerErr || !atual) {
         console.error('[finalizar] erro ao ler classificação de', equipaId, lerErr?.message)
         return
@@ -71,8 +76,10 @@ export async function POST(req: Request, { params }: { params: { jogo_id: string
       if ('vermelhos' in atual) updates.vermelhos = (atual.vermelhos ?? 0) + vermelhosEq
       if ('faltas' in atual)    updates.faltas    = (atual.faltas    ?? 0) + faltasEq
 
-      const { error: updateErr } = await supabase
-        .from('classificacao_grupos').update(updates).eq('equipa_id', equipaId)
+      let updQ = supabase.from('classificacao_grupos').update(updates).eq('equipa_id', equipaId)
+      if (jogo.torneio_id) updQ = updQ.eq('torneio_id', jogo.torneio_id)
+      else updQ = updQ.is('torneio_id', null)
+      const { error: updateErr } = await updQ
 
       if (updateErr) console.error('[finalizar] erro ao atualizar classificação de', equipaId, updateErr.message)
     }
@@ -85,7 +92,7 @@ export async function POST(req: Request, { params }: { params: { jogo_id: string
 
   // Recalcular posições no grupo após finalizar
   if (jogo.fase === 'grupos') {
-    await recalcularPosicoes(supabase, jogo.grupo)
+    await recalcularPosicoes(supabase, jogo.grupo, jogo.torneio_id ?? null)
   }
 
   await supabase.from('admin_logs').insert({
