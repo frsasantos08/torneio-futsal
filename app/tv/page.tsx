@@ -64,7 +64,7 @@ export default function TVPage() {
 
     const unsubClass = subscribeClassificacao((rows) => {
       setGrupos(buildGrupos(rows))
-    })
+    }, tid)
 
     return () => { unsubJogos(); unsubClass() }
   }, [loadData, buildGrupos])

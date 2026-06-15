@@ -30,18 +30,17 @@ export function subscribeAllJogos(onUpdate: JogoCallback) {
   return () => supabase.removeChannel(channel)
 }
 
-export function subscribeClassificacao(onUpdate: ClassificacaoCallback) {
+export function subscribeClassificacao(onUpdate: ClassificacaoCallback, torneioId?: string | null) {
   const channel = supabase
     .channel('classificacao')
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'classificacao_grupos' },
       async () => {
-        const { data } = await supabase
-          .from('classificacao_grupos')
-          .select('*')
-          .order('grupo')
-          .order('pontos', { ascending: false })
+        let q = supabase.from('classificacao_grupos').select('*').order('grupo').order('pontos', { ascending: false })
+        if (torneioId) q = q.eq('torneio_id', torneioId)
+        else q = q.is('torneio_id', null)
+        const { data } = await q
         if (data) onUpdate(data as ClassificacaoEquipa[])
       }
     )

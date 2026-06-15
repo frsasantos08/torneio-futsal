@@ -26,6 +26,7 @@ export default function AdminTorneioPage({ params }: { params: { id: string } })
   const [jogos, setJogos] = useState<Jogo[]>([])
   const [loading, setLoading] = useState(true)
   const [showJogos, setShowJogos] = useState(false)
+  const [initMsg, setInitMsg] = useState<string | null>(null)
 
   useEffect(() => {
     const s = getSession()
@@ -139,6 +140,34 @@ export default function AdminTorneioPage({ params }: { params: { id: string } })
             </div>
           </button>
         ))}
+      </div>
+
+      {/* Inicializar Classificação */}
+      <div className="mt-4 card p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="font-bold text-white text-sm">📊 Inicializar Classificação</div>
+            <div className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>Cria as linhas na tabela de classificação para todas as equipas</div>
+          </div>
+          <button
+            onClick={async () => {
+              setInitMsg('A inicializar...')
+              const r = await fetch('/api/classificacao/inicializar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ torneio_id: params.id }),
+              })
+              const d = await r.json()
+              if (d.ok) setInitMsg(`✅ ${d.criadas} criadas, ${d.existentes} já existiam`)
+              else setInitMsg(`❌ ${d.error}`)
+              setTimeout(() => setInitMsg(null), 5000)
+            }}
+            className="px-4 py-2 rounded-lg text-sm font-bold text-white"
+            style={{ background: 'rgba(59,130,246,0.2)', border: '1px solid rgba(59,130,246,0.4)' }}>
+            Inicializar
+          </button>
+        </div>
+        {initMsg && <div className="mt-2 text-sm font-semibold" style={{ color: 'var(--accent)' }}>{initMsg}</div>}
       </div>
 
       {/* Lista de Jogos */}
