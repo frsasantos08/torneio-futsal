@@ -42,17 +42,7 @@ export default function TVPage() {
   }, [])
 
   useEffect(() => {
-    // Buscar torneio ativo primeiro
-    fetch('/api/config/torneio-ativo').then(r => r.json()).then(cfg => {
-      const tid = cfg?.torneio_id ?? null
-      setTorneioId(tid)
-      if (tid) {
-        fetch(`/api/torneio/${tid}`).then(r => r.json()).then(t => {
-          if (t?.nome) setTorneioNome(t.nome)
-        })
-      }
-      loadData(tid)
-    })
+    let unsubClass: (() => void) | null = null
 
     const unsubJogos = subscribeAllJogos((updated) => {
       setTodosJogos(prev => prev.map(j => j.id === updated.id ? updated : j))
@@ -62,11 +52,22 @@ export default function TVPage() {
       }
     })
 
-    const unsubClass = subscribeClassificacao((rows) => {
-      setGrupos(buildGrupos(rows))
-    }, tid)
+    // Buscar torneio ativo primeiro, depois subscrever classificação com filtro correto
+    fetch('/api/config/torneio-ativo').then(r => r.json()).then(cfg => {
+      const tid = cfg?.torneio_id ?? null
+      setTorneioId(tid)
+      if (tid) {
+        fetch(`/api/torneio/${tid}`).then(r => r.json()).then(t => {
+          if (t?.nome) setTorneioNome(t.nome)
+        })
+      }
+      loadData(tid)
+      unsubClass = subscribeClassificacao((rows) => {
+        setGrupos(buildGrupos(rows))
+      }, tid)
+    })
 
-    return () => { unsubJogos(); unsubClass() }
+    return () => { unsubJogos(); unsubClass?.() }
   }, [loadData, buildGrupos])
 
   const totalGruposFinalizados = todosJogos.filter(j => j.status === 'finalizado' && j.fase === 'grupos').length
