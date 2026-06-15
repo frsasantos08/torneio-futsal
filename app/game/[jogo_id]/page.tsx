@@ -62,14 +62,7 @@ export default function LiveGamePage() {
       if (res.locked) setLockWarning(`Jogo aberto por ${res.by}`)
     }).catch(() => {})
 
-    const unsub = subscribeJogo(jogoId, (jogoAtualizado) => {
-      if (jogoAtualizado) {
-        // Atualizar estado diretamente com os dados do realtime (sem fetch extra)
-        setJogo(jogoAtualizado)
-      } else {
-        loadEstado()
-      }
-    })
+    const unsub = subscribeJogo(jogoId, () => { loadEstado() })
 
     const handleUnload = () => api.unlockJogo(jogoId)
     window.addEventListener('beforeunload', handleUnload)

@@ -4,13 +4,13 @@ import type { Jogo, ClassificacaoEquipa } from './constants'
 type JogoCallback = (jogo: Jogo) => void
 type ClassificacaoCallback = (rows: ClassificacaoEquipa[]) => void
 
-export function subscribeJogo(jogoId: string, onUpdate: (jogo?: Jogo) => void) {
+export function subscribeJogo(jogoId: string, onUpdate: () => void) {
   const channel = supabase
     .channel(`jogo_${jogoId}`)
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'jogos', filter: `id=eq.${jogoId}` },
-      (payload) => onUpdate(payload.new as Jogo)
+      () => onUpdate()
     )
     .subscribe()
 
