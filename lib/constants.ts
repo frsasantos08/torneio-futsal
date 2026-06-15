@@ -46,7 +46,8 @@ export interface HistoricoAcao {
   equipa: Equipa
   valor_novo: number
   admin_id: string
-  timestamp: string
+  created_at: string
+  timestamp?: string  // alias, pode não existir
 }
 
 export interface ClassificacaoEquipa {

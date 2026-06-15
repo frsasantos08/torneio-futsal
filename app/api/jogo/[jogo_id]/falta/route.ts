@@ -18,7 +18,8 @@ export async function POST(req: Request, { params }: { params: { jogo_id: string
 
   await supabase.from('jogos').update({ [field]: novoValor }).eq('id', jogoId)
 
-  await supabase.from('historico_acoes').insert({ jogo_id: jogoId, tipo: 'falta', equipa, valor_anterior: novoValor - 1, valor_novo: novoValor })
+  const { error: histErr } = await supabase.from('historico_acoes').insert({ jogo_id: jogoId, tipo: 'falta', equipa, admin_id: adminId, valor_anterior: novoValor - 1, valor_novo: novoValor })
+  if (histErr) console.error('[falta] historico insert error:', histErr.message)
   supabase.from('admin_logs').insert({ admin_id: adminId, acao: 'falta', jogo_id: jogoId, detalhes: { equipa, novo_valor: novoValor } }).then(() => {})
 
   return NextResponse.json({ ok: true, [field]: novoValor })

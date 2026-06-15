@@ -10,7 +10,7 @@ export async function GET(_req: Request, { params }: { params: { jogo_id: string
   const [jogoRes, historicoRes] = await Promise.all([
     supabase.from('jogos').select('*').eq('id', jogoId).single(),
     supabase.from('historico_acoes').select('*').eq('jogo_id', jogoId)
-      .order('timestamp', { ascending: false }).limit(10),
+      .order('created_at', { ascending: false }).limit(20),
   ])
 
   if (jogoRes.error) return NextResponse.json({ error: jogoRes.error.message }, { status: 404 })

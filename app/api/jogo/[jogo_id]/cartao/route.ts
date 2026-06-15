@@ -39,11 +39,16 @@ export async function POST(req: Request, { params }: { params: { jogo_id: string
 
   await supabase.from('jogos').update(updates).eq('id', jogoId)
 
-  await supabase.from('historico_acoes').insert({
-    jogo_id: jogoId, tipo, equipa,
-    valor_anterior: jogo[`vermelhos_${equipa}`] ?? 0,
-    valor_novo: updates[`vermelhos_${equipa}`] ?? jogo[`vermelhos_${equipa}`] ?? 0,
+  const valorAnterior = tipo === 'amarelo' ? (jogo[`amarelos_${equipa}`] ?? 0) : (jogo[`vermelhos_${equipa}`] ?? 0)
+  const valorNovo = tipo === 'amarelo'
+    ? (updates[`amarelos_${equipa}`] ?? valorAnterior)
+    : (updates[`vermelhos_${equipa}`] ?? valorAnterior)
+  const { error: histErr } = await supabase.from('historico_acoes').insert({
+    jogo_id: jogoId, tipo, equipa, admin_id: adminId,
+    valor_anterior: valorAnterior,
+    valor_novo: valorNovo,
   })
+  if (histErr) console.error('[cartao] historico insert error:', histErr.message)
 
   supabase.from('admin_logs').insert({
     admin_id: adminId, acao: tipo, jogo_id: jogoId, detalhes: { equipa, updates },
