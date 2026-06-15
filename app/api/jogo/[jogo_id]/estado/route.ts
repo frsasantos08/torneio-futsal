@@ -14,5 +14,8 @@ export async function GET(_req: Request, { params }: { params: { jogo_id: string
   ])
 
   if (jogoRes.error) return NextResponse.json({ error: jogoRes.error.message }, { status: 404 })
-  return NextResponse.json({ jogo: jogoRes.data, historico: historicoRes.data ?? [] })
+  return NextResponse.json(
+    { jogo: jogoRes.data, historico: historicoRes.data ?? [] },
+    { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+  )
 }
