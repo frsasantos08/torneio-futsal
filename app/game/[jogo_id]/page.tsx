@@ -62,7 +62,14 @@ export default function LiveGamePage() {
       if (res.locked) setLockWarning(`Jogo aberto por ${res.by}`)
     }).catch(() => {})
 
-    const unsub = subscribeJogo(jogoId, () => { loadEstado() })
+    const unsub = subscribeJogo(jogoId, (jogoAtualizado) => {
+      if (jogoAtualizado) {
+        // Atualizar estado diretamente com os dados do realtime (sem fetch extra)
+        setJogo(jogoAtualizado)
+      } else {
+        loadEstado()
+      }
+    })
 
     const handleUnload = () => api.unlockJogo(jogoId)
     window.addEventListener('beforeunload', handleUnload)
@@ -106,11 +113,9 @@ export default function LiveGamePage() {
     setActionLoading(true)
     try {
       await api.iniciarJogo(jogoId)
-      // Atualizar estado local imediatamente sem esperar pelo loadEstado
-      setJogo(prev => prev ? { ...prev, status: 'decorrer' } : prev)
+      // Forçar estado local para decorrer imediatamente
+      setJogo(prev => prev ? { ...prev, status: 'decorrer' as const } : prev)
       showToast('✅ Jogo iniciado!')
-      // Também recarregar para garantir dados frescos
-      setTimeout(() => loadEstado(), 500)
     } catch (e: unknown) {
       showToast(`❌ ${e instanceof Error ? e.message : 'Erro ao iniciar'}`)
     } finally {
