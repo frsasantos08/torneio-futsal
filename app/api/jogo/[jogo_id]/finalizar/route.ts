@@ -51,7 +51,7 @@ export async function POST(req: Request, { params }: { params: { jogo_id: string
     const pontosB = jogo.golos_b > jogo.golos_a ? 3 : jogo.golos_a === jogo.golos_b ? 1 : 0
 
     const updateEquipa = async (
-      equipaId: string, equipaNome: string, gM: number, gS: number, pts: number,
+      equipaId: string, _equipaNome: string, gM: number, gS: number, pts: number,
       amarelosEq: number, vermelhosEq: number, faltasEq: number,
     ) => {
       // Ler linha existente
@@ -83,7 +83,6 @@ export async function POST(req: Request, { params }: { params: { jogo_id: string
         // Linha não existe — criar (upsert)
         const newRow: Record<string, unknown> = {
           equipa_id:      equipaId,
-          equipa_nome:    equipaNome,
           grupo:          jogo.grupo,
           torneio_id:     jogo.torneio_id ?? null,
           jogos_jogados:  1,

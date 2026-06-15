@@ -11,7 +11,7 @@ export function resolveNomeEquipa(codigo?: string | null): string {
 
 export type JogoStatus = 'pendente' | 'decorrer' | 'finalizado'
 export type Equipa = 'a' | 'b'
-export type TipoAcao = 'golo' | 'amarelo' | 'vermelho' | 'falta'
+export type TipoAcao = 'golo' | 'amarelo' | 'vermelho' | 'vermelho_direto' | 'vermelho_acumulacao' | 'falta'
 
 // Schema real do Supabase (id = UUID, equipas por nome-código)
 export interface Jogo {
@@ -77,6 +77,8 @@ export const ACAO_ICONS: Record<TipoAcao, string> = {
   golo: '⚽',
   amarelo: '🟨',
   vermelho: '🟥',
+  vermelho_direto: '🟥',
+  vermelho_acumulacao: '🟨🟥',
   falta: '⚠️',
 }
 

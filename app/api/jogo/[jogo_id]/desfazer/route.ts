@@ -18,13 +18,15 @@ export async function POST(req: Request, { params }: { params: { jogo_id: string
 
   if (!ultimaAcao) return NextResponse.json({ error: 'Sem ações para desfazer' }, { status: 400 })
 
+  // vermelho_direto e vermelho_acumulacao decrementam o mesmo campo
+  const tipoNormalizado = (ultimaAcao.tipo as string).startsWith('vermelho') ? 'vermelho' : ultimaAcao.tipo
   const fieldMap: Record<string, string> = {
     golo: `golos_${ultimaAcao.equipa}`,
     amarelo: `amarelos_${ultimaAcao.equipa}`,
     vermelho: `vermelhos_${ultimaAcao.equipa}`,
     falta: `faltas_${ultimaAcao.equipa}`,
   }
-  const field = fieldMap[ultimaAcao.tipo]
+  const field = fieldMap[tipoNormalizado]
   if (!field) return NextResponse.json({ error: 'Tipo desconhecido' }, { status: 400 })
 
   const valorAtual = (jogo[field] as number) ?? 0
