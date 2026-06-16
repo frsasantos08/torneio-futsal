@@ -127,12 +127,21 @@ export default function LiveGamePage() {
       setActionLoading(false)
     }
   }
-  const handleFinalizar = () => {
+  const handleFinalizar = async () => {
     if (!confirm('Finalizar o jogo?')) return
-    doAction(async () => {
+    if (actionLoading) return
+    setActionLoading(true)
+    try {
       await api.finalizar(jogoId)
-      router.push(`/game/${jogoId}/resultado`)
-    }, 'Jogo finalizado!')
+      showToast('✅ Jogo finalizado!')
+      // Pequena pausa para garantir que o DB escreveu antes de navegar
+      await new Promise(r => setTimeout(r, 500))
+      // Forçar reload completo para evitar cache do Next.js na página de resultado
+      window.location.href = `/game/${jogoId}/resultado`
+    } catch (e: unknown) {
+      showToast(`❌ ${e instanceof Error ? e.message : 'Erro ao finalizar'}`)
+      setActionLoading(false)
+    }
   }
 
   const handleReabrir = () => {

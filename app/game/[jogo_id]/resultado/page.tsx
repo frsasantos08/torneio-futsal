@@ -23,11 +23,30 @@ export default function ResultadoPage() {
 
 
   useEffect(() => {
-    api.jogoEstado(jogoId).then(data => {
-      setJogo(data.jogo)
-      setConfirmado(data.jogo?.resultado_confirmado ?? false)
-      setLoading(false)
-    })
+    let cancelled = false
+    const load = async (retries = 5) => {
+      try {
+        const data = await api.jogoEstado(jogoId)
+        if (cancelled) return
+        // Se ainda não está finalizado, tentar novamente (pode ter navegado antes da DB escrever)
+        if (data.jogo?.status !== 'finalizado' && retries > 0) {
+          await new Promise(r => setTimeout(r, 600))
+          return load(retries - 1)
+        }
+        setJogo(data.jogo)
+        setConfirmado(data.jogo?.resultado_confirmado ?? false)
+      } catch {
+        if (cancelled) return
+        if (retries > 0) {
+          await new Promise(r => setTimeout(r, 600))
+          return load(retries - 1)
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
   }, [jogoId])
 
   const handleConfirmar = async () => {

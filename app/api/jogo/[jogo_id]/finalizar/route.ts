@@ -18,17 +18,18 @@ export async function POST(req: Request, { params }: { params: { jogo_id: string
     .eq('id', jogoId)
   if (jogoErr) return NextResponse.json({ error: 'Erro ao finalizar jogo: ' + jogoErr.message }, { status: 500 })
 
-  // Recalcular classificação completa do torneio (mais robusto que incrementar)
+  // Recalcular classificação em background (fire-and-forget para não bloquear a resposta)
   if (jogo.fase === 'grupos' && jogo.torneio_id) {
     const baseUrl = req.headers.get('x-forwarded-proto')
       ? `${req.headers.get('x-forwarded-proto')}://${req.headers.get('host')}`
       : 'http://localhost:3000'
 
-    await fetch(`${baseUrl}/api/classificacao/recalcular`, {
+    fetch(`${baseUrl}/api/classificacao/recalcular`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ torneio_id: jogo.torneio_id }),
     }).catch(e => console.error('[finalizar] recalcular error:', e))
+    // Sem await — responde imediatamente após gravar o jogo
   }
 
   await supabase.from('admin_logs').insert({
