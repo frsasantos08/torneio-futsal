@@ -3,48 +3,52 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 
-export async function POST() {
+export async function POST(req: Request) {
   const supabase = createServiceClient()
+  const body = await req.json().catch(() => ({}))
+  const torneioId: string | null = body.torneio_id ?? null
 
-  // 1. Buscar todos os jogos de grupos finalizados
-  const { data: jogos, error: jogosErr } = await supabase
-    .from('jogos')
-    .select('*')
-    .eq('fase', 'grupos')
-    .eq('status', 'finalizado')
+  // 1. Buscar equipas para resolver slot → uuid
+  let equipasQ = supabase.from('equipas').select('id, slot, grupo')
+  if (torneioId) equipasQ = equipasQ.eq('torneio_id', torneioId)
+  const { data: equipasRows } = await equipasQ
+  const slotToId: Record<string, string> = {}
+  for (const e of equipasRows ?? []) {
+    slotToId[e.slot] = e.id
+  }
 
+  // 2. Buscar jogos de grupos finalizados
+  let jogosQ = supabase.from('jogos').select('*').eq('fase', 'grupos').eq('status', 'finalizado')
+  if (torneioId) jogosQ = jogosQ.eq('torneio_id', torneioId)
+  const { data: jogos, error: jogosErr } = await jogosQ
   if (jogosErr) return NextResponse.json({ error: jogosErr.message }, { status: 500 })
 
-  // 2. Buscar todas as linhas da classificação
-  const { data: linhas, error: linhasErr } = await supabase
-    .from('classificacao_grupos')
-    .select('*')
-
+  // 3. Buscar linhas de classificação
+  let linhasQ = supabase.from('classificacao_grupos').select('*')
+  if (torneioId) linhasQ = linhasQ.eq('torneio_id', torneioId)
+  const { data: linhas, error: linhasErr } = await linhasQ
   if (linhasErr) return NextResponse.json({ error: linhasErr.message }, { status: 500 })
 
-  // 3. Calcular totais por equipa a partir dos jogos
-  const totais: Record<string, {
-    jogos_jogados: number, vitorias: number, empates: number, derrotas: number,
-    golos_marcados: number, golos_sofridos: number,
-    amarelos: number, vermelhos: number, faltas: number, pontos: number,
-  }> = {}
-
+  // 4. Calcular totais por equipa (resolver UUID por slot se equipa_a_id for null)
   const init = () => ({
     jogos_jogados: 0, vitorias: 0, empates: 0, derrotas: 0,
     golos_marcados: 0, golos_sofridos: 0,
     amarelos: 0, vermelhos: 0, faltas: 0, pontos: 0,
   })
+  const totais: Record<string, ReturnType<typeof init>> = {}
 
   for (const j of jogos ?? []) {
-    if (!j.equipa_a_id || !j.equipa_b_id) continue
+    const idA = j.equipa_a_id ?? slotToId[j.equipa_a_nome] ?? null
+    const idB = j.equipa_b_id ?? slotToId[j.equipa_b_nome] ?? null
+    if (!idA || !idB) continue
 
     const pontosA = j.golos_a > j.golos_b ? 3 : j.golos_a === j.golos_b ? 1 : 0
     const pontosB = j.golos_b > j.golos_a ? 3 : j.golos_a === j.golos_b ? 1 : 0
 
-    if (!totais[j.equipa_a_id]) totais[j.equipa_a_id] = init()
-    if (!totais[j.equipa_b_id]) totais[j.equipa_b_id] = init()
+    if (!totais[idA]) totais[idA] = init()
+    if (!totais[idB]) totais[idB] = init()
 
-    const a = totais[j.equipa_a_id]
+    const a = totais[idA]
     a.jogos_jogados++
     a.vitorias   += pontosA === 3 ? 1 : 0
     a.empates    += pontosA === 1 ? 1 : 0
@@ -56,7 +60,7 @@ export async function POST() {
     a.faltas     += j.faltas_a ?? 0
     a.pontos     += pontosA
 
-    const b = totais[j.equipa_b_id]
+    const b = totais[idB]
     b.jogos_jogados++
     b.vitorias   += pontosB === 3 ? 1 : 0
     b.empates    += pontosB === 1 ? 1 : 0
@@ -69,39 +73,31 @@ export async function POST() {
     b.pontos     += pontosB
   }
 
-  // 4. Calcular posição dentro de cada grupo (por pontos → DG → GM)
+  // 5. Calcular posições por grupo
   const gruposMap: Record<string, string[]> = {}
-  for (const linha of linhas ?? []) {
-    const g = linha.grupo as string
-    if (!gruposMap[g]) gruposMap[g] = []
-    gruposMap[g].push(linha.equipa_id)
+  for (const l of linhas ?? []) {
+    ;(gruposMap[l.grupo] ??= []).push(l.equipa_id)
   }
-
   const posicoes: Record<string, number> = {}
   for (const grupo of Object.keys(gruposMap)) {
-    const equipasOrdenadas = gruposMap[grupo].sort((a, b) => {
-      const ta = totais[a] ?? init()
-      const tb = totais[b] ?? init()
-      if (tb.pontos !== ta.pontos) return tb.pontos - ta.pontos
-      const dgA = ta.golos_marcados - ta.golos_sofridos
-      const dgB = tb.golos_marcados - tb.golos_sofridos
-      if (dgB !== dgA) return dgB - dgA
-      return tb.golos_marcados - ta.golos_marcados
-    })
-    equipasOrdenadas.forEach((id, idx) => { posicoes[id] = idx + 1 })
+    gruposMap[grupo]
+      .sort((a, b) => {
+        const ta = totais[a] ?? init()
+        const tb = totais[b] ?? init()
+        if (tb.pontos !== ta.pontos) return tb.pontos - ta.pontos
+        const dgA = ta.golos_marcados - ta.golos_sofridos
+        const dgB = tb.golos_marcados - tb.golos_sofridos
+        if (dgB !== dgA) return dgB - dgA
+        return tb.golos_marcados - ta.golos_marcados
+      })
+      .forEach((id, idx) => { posicoes[id] = idx + 1 })
   }
 
-  // 5. Atualizar cada linha da classificação
+  // 6. Atualizar cada linha
   const erros: string[] = []
-  const amostra = linhas?.[0] ? Object.keys(linhas[0]) : []
-  const temFaltas    = amostra.includes('faltas')
-  const temAmarelos  = amostra.includes('amarelos')
-  const temVermelhos = amostra.includes('vermelhos')
-
   for (const linha of linhas ?? []) {
     const t = totais[linha.equipa_id] ?? init()
-
-    const update: Record<string, number> = {
+    const { error } = await supabase.from('classificacao_grupos').update({
       posicao:        posicoes[linha.equipa_id] ?? 0,
       jogos_jogados:  t.jogos_jogados,
       vitorias:       t.vitorias,
@@ -110,16 +106,10 @@ export async function POST() {
       golos_marcados: t.golos_marcados,
       golos_sofridos: t.golos_sofridos,
       pontos:         t.pontos,
-    }
-    if (temAmarelos)  update.amarelos  = t.amarelos
-    if (temVermelhos) update.vermelhos = t.vermelhos
-    if (temFaltas)    update.faltas    = t.faltas
-
-    const { error } = await supabase
-      .from('classificacao_grupos')
-      .update(update)
-      .eq('equipa_id', linha.equipa_id)
-
+      amarelos:       t.amarelos,
+      vermelhos:      t.vermelhos,
+      faltas:         t.faltas,
+    }).eq('equipa_id', linha.equipa_id).eq('torneio_id', linha.torneio_id)
     if (error) erros.push(`${linha.equipa_id}: ${error.message}`)
   }
 

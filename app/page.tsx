@@ -98,7 +98,8 @@ export default function HomePage() {
     try {
       const res = await fetch('/api/classificacao/recalcular', {
         method: 'POST',
-        headers: { 'X-Admin-Id': session?.admin_id ?? '' },
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Id': session?.admin_id ?? '' },
+        body: JSON.stringify({ torneio_id: torneioId }),
       })
       const data = await res.json()
       setRecalcMsg(data.ok
