@@ -25,8 +25,9 @@ export async function POST(req: Request, { params }: { params: { jogo_id: string
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
   if (!updated || updated.length === 0) return NextResponse.json({ error: 'Jogo não encontrado para update' }, { status: 404 })
 
+  const keyUsed = process.env.SUPABASE_SERVICE_ROLE_KEY ? 'service_role' : 'anon_fallback'
   const { error: histErr } = await supabase.from('historico_acoes').insert({ jogo_id: jogoId, tipo: 'golo', equipa, valor_anterior: novoValor - 1, valor_novo: novoValor })
-  if (histErr) console.error('[golo] historico insert error:', histErr.message)
+  if (histErr) console.error('[golo] historico insert error (key:', keyUsed, '):', histErr.message, histErr.code)
   supabase.from('admin_logs').insert({ admin_id: adminId, acao: 'golo', jogo_id: jogoId, detalhes: { equipa, novo_valor: novoValor } }).then(() => {})
 
   return NextResponse.json({ ok: true, [field]: novoValor })

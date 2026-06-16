@@ -13,10 +13,20 @@ export async function POST(req: Request, { params }: { params: { jogo_id: string
   if (jogo.status === 'finalizado') return NextResponse.json({ error: 'Já finalizado' }, { status: 400 })
 
   // Finalizar o jogo
-  const { error: jogoErr } = await supabase.from('jogos')
+  const keyUsed = process.env.SUPABASE_SERVICE_ROLE_KEY ? 'service_role' : 'anon_fallback'
+  console.log('[finalizar] key:', keyUsed, 'jogoId:', jogoId, 'status atual:', jogo.status)
+
+  const { data: jogoUpdated, error: jogoErr } = await supabase.from('jogos')
     .update({ status: 'finalizado', admin_em_sessao: null })
     .eq('id', jogoId)
+    .select('id, status')
+
+  console.log('[finalizar] update result:', { jogoUpdated, jogoErr })
+
   if (jogoErr) return NextResponse.json({ error: 'Erro ao finalizar jogo: ' + jogoErr.message }, { status: 500 })
+  if (!jogoUpdated || jogoUpdated.length === 0) {
+    return NextResponse.json({ error: `Sem permissão para finalizar (key: ${keyUsed})` }, { status: 403 })
+  }
 
   // Recalcular classificação em background (fire-and-forget para não bloquear a resposta)
   if (jogo.fase === 'grupos' && jogo.torneio_id) {
