@@ -24,26 +24,34 @@ export default function ResultadoPage() {
 
   useEffect(() => {
     let cancelled = false
-    const load = async (retries = 5) => {
+    const load = async () => {
+      // Tentar até 8x com 700ms de intervalo (máx ~5.6s de espera)
+      for (let i = 0; i < 8; i++) {
+        try {
+          const data = await api.jogoEstado(jogoId)
+          if (cancelled) return
+          if (data.jogo?.status === 'finalizado') {
+            setJogo(data.jogo)
+            setConfirmado(data.jogo?.resultado_confirmado ?? false)
+            setLoading(false)
+            return
+          }
+        } catch {
+          if (cancelled) return
+        }
+        // Ainda não finalizado — aguardar antes de tentar de novo
+        await new Promise(r => setTimeout(r, 700))
+        if (cancelled) return
+      }
+      // Esgotaram as tentativas: carregar o que existir (pode ser 0-0 se algo correu mal)
       try {
         const data = await api.jogoEstado(jogoId)
-        if (cancelled) return
-        // Se ainda não está finalizado, tentar novamente (pode ter navegado antes da DB escrever)
-        if (data.jogo?.status !== 'finalizado' && retries > 0) {
-          await new Promise(r => setTimeout(r, 600))
-          return load(retries - 1)
+        if (!cancelled) {
+          setJogo(data.jogo)
+          setConfirmado(data.jogo?.resultado_confirmado ?? false)
         }
-        setJogo(data.jogo)
-        setConfirmado(data.jogo?.resultado_confirmado ?? false)
-      } catch {
-        if (cancelled) return
-        if (retries > 0) {
-          await new Promise(r => setTimeout(r, 600))
-          return load(retries - 1)
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
+      } catch { /* ignorar */ }
+      if (!cancelled) setLoading(false)
     }
     load()
     return () => { cancelled = true }
