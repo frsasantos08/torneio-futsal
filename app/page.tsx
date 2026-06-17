@@ -88,18 +88,20 @@ export default function HomePage() {
       }
     })
 
-    // Re-carregar dados quando o utilizador volta à página (tab ou janela)
+    // Re-carregar quando volta à tab/janela
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') load()
     }
     document.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('focus', load)
 
-    // Poll a cada 30s como fallback caso o realtime falhe
-    const poll = setInterval(load, 30000)
+    // Poll a cada 10s como fallback caso o realtime falhe (RLS bloqueia eventos anon)
+    const poll = setInterval(load, 10000)
 
     return () => {
       unsub()
       document.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('focus', load)
       clearInterval(poll)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
