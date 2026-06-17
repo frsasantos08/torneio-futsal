@@ -47,10 +47,11 @@ export default function HomePage() {
       }
 
       const param = tid ? `?torneio_id=${tid}` : ''
+      const bust = `${param ? '&' : '?'}_t=${Date.now()}`
       const [prox, atual, todos] = await Promise.all([
-        fetch(`/api/jogo/proximos${param}`).then(r => r.json()).catch(() => []),
-        fetch(`/api/jogo/atual${param}`).then(r => r.json()).catch(() => null),
-        fetch(`/api/jogo/todos${param}`).then(r => r.json()).catch(() => []),
+        fetch(`/api/jogo/proximos${param}${bust}`, { cache: 'no-store' }).then(r => r.json()).catch(() => []),
+        fetch(`/api/jogo/atual${param}${bust}`, { cache: 'no-store' }).then(r => r.json()).catch(() => null),
+        fetch(`/api/jogo/todos${param}${bust}`, { cache: 'no-store' }).then(r => r.json()).catch(() => []),
       ])
       setProximos(Array.isArray(prox) ? prox : [])
       setJogoAtual(atual?.id ? atual : null)
