@@ -87,7 +87,21 @@ export default function HomePage() {
         if (updated.status === 'decorrer') setJogoAtual(updated)
       }
     })
-    return () => { unsub() }
+
+    // Re-carregar dados quando o utilizador volta à página (tab ou janela)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') load()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    // Poll a cada 30s como fallback caso o realtime falhe
+    const poll = setInterval(load, 30000)
+
+    return () => {
+      unsub()
+      document.removeEventListener('visibilitychange', handleVisibility)
+      clearInterval(poll)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
