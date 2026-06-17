@@ -26,14 +26,14 @@ export default function ResultadoPage() {
   useEffect(() => {
     let cancelled = false
     const load = async () => {
-      // Tentar até 8x com 700ms de intervalo (máx ~5.6s de espera)
-      for (let i = 0; i < 8; i++) {
+      // Tentar até 16x com 700ms de intervalo (máx ~11s de espera)
+      for (let i = 0; i < 16; i++) {
         try {
           const data = await api.jogoEstado(jogoId)
           if (cancelled) return
           const status = data.jogo?.status
           const golos = `${data.jogo?.golos_a}-${data.jogo?.golos_b}`
-          setDebugInfo(`Tentativa ${i+1}/8: status=${status} golos=${golos}`)
+          setDebugInfo(`Tentativa ${i+1}/16: status=${status} golos=${golos}`)
           if (status === 'finalizado') {
             setJogo(data.jogo)
             setConfirmado(data.jogo?.resultado_confirmado ?? false)
@@ -68,6 +68,10 @@ export default function ResultadoPage() {
     try {
       if (jogo?.status !== 'finalizado') {
         await api.finalizar(jogoId)
+        // Recarregar dados após finalizar
+        await new Promise(r => setTimeout(r, 500))
+        window.location.reload()
+        return
       }
       setConfirmado(true)
       setTimeout(() => router.push('/'), 1500)
@@ -98,17 +102,25 @@ export default function ResultadoPage() {
   )
   if (!jogo) return null
 
-  // Jogo pendente: nunca foi iniciado — redirecionar para o jogo
-  if (jogo.status === 'pendente') {
+  // Jogo não finalizado: mostrar opção de finalizar aqui mesmo
+  if (jogo.status !== 'finalizado') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-4">
         <div className="text-4xl">⚠️</div>
-        <div className="text-white font-bold text-center">Este jogo ainda não foi iniciado</div>
-        <div className="text-sm text-center" style={{ color: 'var(--muted)' }}>
-          {resolveNomeEquipa(jogo.equipa_a_nome)} vs {resolveNomeEquipa(jogo.equipa_b_nome)}
+        <div className="text-white font-bold text-center">
+          {jogo.status === 'pendente' ? 'Este jogo ainda não foi iniciado' : 'Jogo em curso'}
         </div>
-        <button onClick={() => router.push(`/game/${jogoId}`)} className="btn-primary px-6 py-3">
-          Ir para o Jogo
+        <div className="text-sm text-center" style={{ color: 'var(--muted)' }}>
+          {resolveNomeEquipa(jogo.equipa_a_nome)} {jogo.golos_a ?? 0} – {jogo.golos_b ?? 0} {resolveNomeEquipa(jogo.equipa_b_nome)}
+        </div>
+        {debugInfo && (
+          <div className="text-xs font-mono px-3 py-1 rounded" style={{ background: 'var(--card)', color: '#f87171' }}>{debugInfo}</div>
+        )}
+        <button onClick={handleConfirmar} disabled={saving} className="btn-primary px-6 py-3">
+          {saving ? 'A finalizar...' : '✅ Finalizar e Confirmar Resultado'}
+        </button>
+        <button onClick={() => router.push(`/game/${jogoId}`)} className="text-sm px-4 py-2 rounded" style={{ background: 'var(--border)', color: 'var(--accent)' }}>
+          Voltar ao Jogo
         </button>
         <button onClick={() => router.push('/')} className="text-sm" style={{ color: 'var(--muted)' }}>
           ← Início
