@@ -65,6 +65,7 @@ export interface ClassificacaoEquipa {
   vermelhos?: number
   faltas?: number
   pontos: number
+  pontos_disciplina?: number
 }
 
 export const STATUS_LABELS: Record<JogoStatus, string> = {

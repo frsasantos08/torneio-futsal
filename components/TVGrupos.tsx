@@ -291,6 +291,7 @@ function GrupoCard({ grupo, equipas }: { grupo: string; equipas: EqData[] }) {
           ))}
           <span style={{ minWidth: '18px', textAlign: 'center', marginLeft: '4px' }}>🟨</span>
           <span style={{ minWidth: '18px', textAlign: 'center' }}>🟥</span>
+          <span style={{ minWidth: '26px', textAlign: 'center', marginLeft: '4px', color: '#a78bfa' }}>DISC</span>
         </div>
       </div>
 
@@ -339,6 +340,10 @@ function GrupoCard({ grupo, equipas }: { grupo: string; equipas: EqData[] }) {
               </span>
               <span style={{ textAlign: 'center', minWidth: '18px', color: (eq.vermelhos ?? 0) > 0 ? '#f87171' : '#3a4a60', fontWeight: 700, fontSize: '0.65rem' }}>
                 {eq.vermelhos ?? 0}
+              </span>
+              {/* Pontos Disciplina */}
+              <span style={{ textAlign: 'center', minWidth: '26px', marginLeft: '4px', color: (eq.pontos_disciplina ?? 0) > 0 ? '#a78bfa' : '#3a4a60', fontWeight: 700, fontSize: '0.65rem' }}>
+                {eq.pontos_disciplina ?? 0}
               </span>
             </div>
           </div>

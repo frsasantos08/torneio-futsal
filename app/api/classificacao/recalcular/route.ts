@@ -97,18 +97,20 @@ export async function POST(req: Request) {
   const erros: string[] = []
   for (const linha of linhas ?? []) {
     const t = totais[linha.equipa_id] ?? init()
+    const pontosDisc = t.faltas * 1 + t.amarelos * 20 + t.vermelhos * 100
     const { error } = await supabase.from('classificacao_grupos').update({
-      posicao:        posicoes[linha.equipa_id] ?? 0,
-      jogos_jogados:  t.jogos_jogados,
-      vitorias:       t.vitorias,
-      empates:        t.empates,
-      derrotas:       t.derrotas,
-      golos_marcados: t.golos_marcados,
-      golos_sofridos: t.golos_sofridos,
-      pontos:         t.pontos,
-      amarelos:       t.amarelos,
-      vermelhos:      t.vermelhos,
-      faltas:         t.faltas,
+      posicao:           posicoes[linha.equipa_id] ?? 0,
+      jogos_jogados:     t.jogos_jogados,
+      vitorias:          t.vitorias,
+      empates:           t.empates,
+      derrotas:          t.derrotas,
+      golos_marcados:    t.golos_marcados,
+      golos_sofridos:    t.golos_sofridos,
+      pontos:            t.pontos,
+      amarelos:          t.amarelos,
+      vermelhos:         t.vermelhos,
+      faltas:            t.faltas,
+      pontos_disciplina: pontosDisc,
     }).eq('equipa_id', linha.equipa_id).eq('torneio_id', linha.torneio_id)
     if (error) erros.push(`${linha.equipa_id}: ${error.message}`)
   }
