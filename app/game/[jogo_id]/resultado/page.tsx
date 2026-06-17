@@ -66,8 +66,7 @@ export default function ResultadoPage() {
   const handleConfirmar = async () => {
     setSaving(true)
     try {
-      // Só finaliza se ainda estiver em decorrer; se já finalizado, apenas redireciona
-      if (jogo?.status === 'decorrer') {
+      if (jogo?.status !== 'finalizado') {
         await api.finalizar(jogoId)
       }
       setConfirmado(true)
@@ -98,6 +97,25 @@ export default function ResultadoPage() {
     </div>
   )
   if (!jogo) return null
+
+  // Jogo pendente: nunca foi iniciado — redirecionar para o jogo
+  if (jogo.status === 'pendente') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-4">
+        <div className="text-4xl">⚠️</div>
+        <div className="text-white font-bold text-center">Este jogo ainda não foi iniciado</div>
+        <div className="text-sm text-center" style={{ color: 'var(--muted)' }}>
+          {resolveNomeEquipa(jogo.equipa_a_nome)} vs {resolveNomeEquipa(jogo.equipa_b_nome)}
+        </div>
+        <button onClick={() => router.push(`/game/${jogoId}`)} className="btn-primary px-6 py-3">
+          Ir para o Jogo
+        </button>
+        <button onClick={() => router.push('/')} className="text-sm" style={{ color: 'var(--muted)' }}>
+          ← Início
+        </button>
+      </div>
+    )
+  }
 
   const nomeA = resolveNomeEquipa(jogo.equipa_a_nome)
   const nomeB = resolveNomeEquipa(jogo.equipa_b_nome)
@@ -220,12 +238,6 @@ export default function ResultadoPage() {
       )}
 
       {/* Confirmar */}
-      {debugInfo && (
-        <div className="text-xs font-mono px-3 py-1 rounded mb-2 text-center" style={{ background: 'var(--card)', color: '#60a5fa' }}>
-          {debugInfo}
-        </div>
-      )}
-
       {confirmado ? (
         <div className="text-center py-4 font-bold text-green-400">
           ✅ Resultado Confirmado! A redirecionar...
