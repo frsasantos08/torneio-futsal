@@ -103,6 +103,21 @@ export default function ResultadoPage() {
   const nomeB = resolveNomeEquipa(jogo.equipa_b_nome)
   const vencedor = jogo.golos_a > jogo.golos_b ? nomeA : jogo.golos_b > jogo.golos_a ? nomeB : 'Empate'
 
+  // Pontos de disciplina (menor = melhor)
+  // Falta=1 | Amarelo=20 | Vermelho acumulação=50 | Vermelho direto=100
+  const calcDisciplina = (eq: 'a' | 'b') => {
+    const j = jogo as unknown as Record<string, number>
+    const faltas   = j[`faltas_${eq}`]   ?? 0
+    const amarelos = j[`amarelos_${eq}`] ?? 0
+    const vDireto  = j[`vermelho_direto_${eq}`]      ?? 0
+    const vAcum    = j[`vermelho_acumulacao_${eq}`]  ?? 0
+    // vermelhos sem breakdown: total - direto - acum
+    const vOutros  = Math.max(0, (j[`vermelhos_${eq}`] ?? 0) - vDireto - vAcum)
+    return faltas * 1 + amarelos * 20 + vAcum * 50 + (vDireto + vOutros) * 100
+  }
+  const discA = calcDisciplina('a')
+  const discB = calcDisciplina('b')
+
   return (
     <div className="min-h-screen p-4 max-w-lg mx-auto pb-10">
       <div className="flex items-center justify-between mb-6">
@@ -150,6 +165,23 @@ export default function ResultadoPage() {
           <div className="text-orange-400 font-extrabold text-lg">{jogo.faltas_a}</div>
           <div style={{ color: 'var(--muted)' }}>⚠️ Faltas</div>
           <div className="text-orange-400 font-extrabold text-lg">{jogo.faltas_b}</div>
+        </div>
+
+        {/* Separador */}
+        <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
+
+        {/* Pontos de Disciplina */}
+        <div className="grid grid-cols-3 text-center items-center">
+          <div className={`text-xl font-extrabold ${discA < discB ? 'text-green-400' : discA > discB ? 'text-red-400' : 'text-white'}`}>
+            {discA}
+          </div>
+          <div className="text-xs font-semibold" style={{ color: 'var(--muted)' }}>
+            🏅 Disciplina<br />
+            <span className="text-xs" style={{ color: 'var(--muted)', fontWeight: 400 }}>(menos = melhor)</span>
+          </div>
+          <div className={`text-xl font-extrabold ${discB < discA ? 'text-green-400' : discB > discA ? 'text-red-400' : 'text-white'}`}>
+            {discB}
+          </div>
         </div>
       </div>
 
