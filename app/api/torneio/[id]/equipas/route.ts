@@ -17,13 +17,17 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
   if (!equipa_id) return NextResponse.json({ error: 'equipa_id obrigatório' }, { status: 400 })
 
-  const updates: Record<string, unknown> = {}
+  // Buscar estado actual ANTES de atualizar (para saber o nome antigo nos jogos)
+  const { data: equipaAtual } = await supabase
+    .from('equipas').select('slot, nome').eq('id', equipa_id).single()
+  // Nome que está actualmente nos jogos: pode ser o slot (1ª vez) ou um nome anterior
+  const nomeAtualNosJogos = equipaAtual?.nome?.trim() || equipaAtual?.slot || null
 
+  const updates: Record<string, unknown> = {}
   if (nome !== undefined) {
     updates.nome = nome.trim() || null
     updates.confirmada = (nome.trim().length > 0)
   }
-
   if (confirmadaOverride !== undefined) {
     updates.confirmada = confirmadaOverride
   }
@@ -37,24 +41,26 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // ── Atualizar nome nos jogos em tempo real ──────────────────────────────────
-  // Quando o admin atribui um nome ao slot, substitui o código (ex: "A2") pelo
-  // nome real (ex: "MARCOPINTA") em todos os jogos deste torneio.
-  // A TV tem subscribeAllJogos activo e vai reflectir a mudança imediatamente.
-  if (nome !== undefined && data?.slot) {
-    const slot = data.slot as string
-    const nomeNovo = (nome.trim() || slot) // se apagou o nome, volta ao slot
+  // Atualizar nome nos jogos usando o nome ANTIGO como critério de pesquisa
+  if (nome !== undefined && equipaAtual?.slot) {
+    const slot = equipaAtual.slot
+    const nomeNovo = nome.trim() || slot
 
-    await Promise.all([
-      supabase.from('jogos')
-        .update({ equipa_a_nome: nomeNovo })
-        .eq('torneio_id', params.id)
-        .eq('equipa_a_nome', slot),
-      supabase.from('jogos')
-        .update({ equipa_b_nome: nomeNovo })
-        .eq('torneio_id', params.id)
-        .eq('equipa_b_nome', slot),
-    ])
+    // Atualizar jogos onde o nome ainda é o slot ou o nome anterior
+    const criterios = Array.from(new Set([slot, nomeAtualNosJogos].filter(Boolean))) as string[]
+
+    await Promise.all(
+      criterios.flatMap(nomeVelho => [
+        supabase.from('jogos')
+          .update({ equipa_a_nome: nomeNovo })
+          .eq('torneio_id', params.id)
+          .eq('equipa_a_nome', nomeVelho),
+        supabase.from('jogos')
+          .update({ equipa_b_nome: nomeNovo })
+          .eq('torneio_id', params.id)
+          .eq('equipa_b_nome', nomeVelho),
+      ])
+    )
   }
 
   return NextResponse.json(data)
