@@ -16,6 +16,7 @@ export default function ResultadoPage() {
   const [loading, setLoading] = useState(true)
   const [confirmado, setConfirmado] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<string>('')
 
   // Correção (superadmin)
   const [editMode, setEditMode] = useState(false)
@@ -30,23 +31,28 @@ export default function ResultadoPage() {
         try {
           const data = await api.jogoEstado(jogoId)
           if (cancelled) return
-          if (data.jogo?.status === 'finalizado') {
+          const status = data.jogo?.status
+          const golos = `${data.jogo?.golos_a}-${data.jogo?.golos_b}`
+          setDebugInfo(`Tentativa ${i+1}/8: status=${status} golos=${golos}`)
+          if (status === 'finalizado') {
             setJogo(data.jogo)
             setConfirmado(data.jogo?.resultado_confirmado ?? false)
             setLoading(false)
             return
           }
-        } catch {
+        } catch (e) {
           if (cancelled) return
+          setDebugInfo(`Tentativa ${i+1}/8: ERRO - ${e instanceof Error ? e.message : String(e)}`)
         }
         // Ainda não finalizado — aguardar antes de tentar de novo
         await new Promise(r => setTimeout(r, 700))
         if (cancelled) return
       }
-      // Esgotaram as tentativas: carregar o que existir (pode ser 0-0 se algo correu mal)
+      // Esgotaram as tentativas: carregar o que existir
       try {
         const data = await api.jogoEstado(jogoId)
         if (!cancelled) {
+          setDebugInfo(`Final: status=${data.jogo?.status} golos=${data.jogo?.golos_a}-${data.jogo?.golos_b}`)
           setJogo(data.jogo)
           setConfirmado(data.jogo?.resultado_confirmado ?? false)
         }
@@ -85,7 +91,12 @@ export default function ResultadoPage() {
     }
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center" style={{ color: 'var(--muted)' }}>A carregar...</div>
+  if (loading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-3" style={{ color: 'var(--muted)' }}>
+      <div>A aguardar resultado...</div>
+      {debugInfo && <div className="text-xs font-mono px-3 py-1 rounded" style={{ background: 'var(--card)', color: '#60a5fa' }}>{debugInfo}</div>}
+    </div>
+  )
   if (!jogo) return null
 
   const nomeA = resolveNomeEquipa(jogo.equipa_a_nome)
@@ -174,6 +185,12 @@ export default function ResultadoPage() {
       )}
 
       {/* Confirmar */}
+      {debugInfo && (
+        <div className="text-xs font-mono px-3 py-1 rounded mb-2 text-center" style={{ background: 'var(--card)', color: '#60a5fa' }}>
+          {debugInfo}
+        </div>
+      )}
+
       {confirmado ? (
         <div className="text-center py-4 font-bold text-green-400">
           ✅ Resultado Confirmado! A redirecionar...
