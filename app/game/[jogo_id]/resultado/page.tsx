@@ -112,19 +112,22 @@ export default function ResultadoPage() {
         <span className="badge-finalizado">RESULTADO FINAL</span>
       </div>
 
-      {/* Score gigante */}
-      <div className="card p-8 text-center mb-6">
-        <div className="grid grid-cols-3 items-center gap-4 mb-4">
-          <div className="font-extrabold text-white text-xl">{nomeA}</div>
-          <div style={{ fontSize: 'clamp(4rem, 15vw, 8rem)', fontWeight: 900, color: 'var(--accent)', lineHeight: 1 }}>
-            {jogo.golos_a}–{jogo.golos_b}
-          </div>
-          <div className="font-extrabold text-white text-xl">{nomeB}</div>
+      {/* Score */}
+      <div className="card p-6 text-center mb-6">
+        {/* Nomes */}
+        <div className="flex items-center justify-between mb-3 px-2">
+          <div className="font-extrabold text-white text-lg flex-1 text-left">{nomeA}</div>
+          <div className="text-xs font-semibold px-3" style={{ color: 'var(--muted)' }}>vs</div>
+          <div className="font-extrabold text-white text-lg flex-1 text-right">{nomeB}</div>
+        </div>
+        {/* Score numa linha só */}
+        <div className="text-7xl font-black mb-3" style={{ color: 'var(--accent)', lineHeight: 1 }}>
+          {jogo.golos_a} – {jogo.golos_b}
         </div>
         {vencedor !== 'Empate' ? (
-          <div className="text-lg font-bold" style={{ color: 'var(--accent)' }}>🏆 {vencedor}</div>
+          <div className="text-base font-bold" style={{ color: 'var(--accent)' }}>🏆 {vencedor}</div>
         ) : (
-          <div className="text-lg font-bold" style={{ color: 'var(--muted)' }}>🤝 Empate</div>
+          <div className="text-base font-bold" style={{ color: 'var(--muted)' }}>🤝 Empate</div>
         )}
       </div>
 
