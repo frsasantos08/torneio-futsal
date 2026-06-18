@@ -9,12 +9,14 @@ export async function POST(req: Request) {
   const torneioId: string | null = body.torneio_id ?? null
 
   // 1. Buscar equipas para resolver slot → uuid
-  let equipasQ = supabase.from('equipas').select('id, slot, grupo')
+  let equipasQ = supabase.from('equipas').select('id, slot, grupo, nome')
   if (torneioId) equipasQ = equipasQ.eq('torneio_id', torneioId)
   const { data: equipasRows } = await equipasQ
   const slotToId: Record<string, string> = {}
+  const idToNome: Record<string, string> = {}
   for (const e of equipasRows ?? []) {
     slotToId[e.slot] = e.id
+    idToNome[e.id] = e.nome ?? e.slot
   }
 
   // 2. Buscar jogos de grupos finalizados
@@ -111,6 +113,7 @@ export async function POST(req: Request) {
       vermelhos:         t.vermelhos,
       faltas:            t.faltas,
       pontos_disciplina: pontosDisc,
+      nome: idToNome[linha.equipa_id] ?? null,
     }).eq('equipa_id', linha.equipa_id).eq('torneio_id', linha.torneio_id)
     if (error) erros.push(`${linha.equipa_id}: ${error.message}`)
   }
