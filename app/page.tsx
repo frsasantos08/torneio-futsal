@@ -251,7 +251,8 @@ export default function HomePage() {
           )}
         </div>
         <div className="flex gap-2">
-          <a href="/tv" className="text-xs px-3 py-2 rounded-lg border font-semibold"
+          <a href="https://torneio-futsal.flutterflow.app/" target="_blank" rel="noopener noreferrer"
+             className="text-xs px-3 py-2 rounded-lg border font-semibold"
              style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
             📺 TV
           </a>
