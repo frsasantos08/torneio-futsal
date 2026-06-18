@@ -38,6 +38,7 @@ export async function POST(req: Request) {
     jogos_jogados: 0, vitorias: 0, empates: 0, derrotas: 0,
     golos_marcados: 0, golos_sofridos: 0,
     amarelos: 0, vermelhos: 0, faltas: 0, pontos: 0,
+    vermelho_direto: 0, vermelho_acumulacao: 0,
   })
   const totais: Record<string, ReturnType<typeof init>> = {}
 
@@ -59,10 +60,12 @@ export async function POST(req: Request) {
     a.derrotas   += pontosA === 0 ? 1 : 0
     a.golos_marcados += j.golos_a ?? 0
     a.golos_sofridos += j.golos_b ?? 0
-    a.amarelos   += j.amarelos_a ?? 0
-    a.vermelhos  += j.vermelhos_a ?? 0
-    a.faltas     += j.faltas_a ?? 0
-    a.pontos     += pontosA
+    a.amarelos          += j.amarelos_a ?? 0
+    a.vermelhos         += j.vermelhos_a ?? 0
+    a.faltas            += j.faltas_a ?? 0
+    a.pontos            += pontosA
+    a.vermelho_direto   += j.vermelho_direto_a ?? 0
+    a.vermelho_acumulacao += j.vermelho_acumulacao_a ?? 0
 
     const b = totais[idB]
     b.jogos_jogados++
@@ -71,10 +74,12 @@ export async function POST(req: Request) {
     b.derrotas   += pontosB === 0 ? 1 : 0
     b.golos_marcados += j.golos_b ?? 0
     b.golos_sofridos += j.golos_a ?? 0
-    b.amarelos   += j.amarelos_b ?? 0
-    b.vermelhos  += j.vermelhos_b ?? 0
-    b.faltas     += j.faltas_b ?? 0
-    b.pontos     += pontosB
+    b.amarelos          += j.amarelos_b ?? 0
+    b.vermelhos         += j.vermelhos_b ?? 0
+    b.faltas            += j.faltas_b ?? 0
+    b.pontos            += pontosB
+    b.vermelho_direto   += j.vermelho_direto_b ?? 0
+    b.vermelho_acumulacao += j.vermelho_acumulacao_b ?? 0
   }
 
   // 5. Calcular posições por grupo
@@ -101,7 +106,8 @@ export async function POST(req: Request) {
   const erros: string[] = []
   for (const linha of linhas ?? []) {
     const t = totais[linha.equipa_id] ?? init()
-    const pontosDisc = t.faltas * 1 + t.amarelos * 20 + t.vermelhos * 100
+    const vOutros = Math.max(0, t.vermelhos - t.vermelho_direto - t.vermelho_acumulacao)
+    const pontosDisc = t.faltas * 1 + t.amarelos * 20 + t.vermelho_acumulacao * 50 + (t.vermelho_direto + vOutros) * 100
     const { error } = await supabase.from('classificacao_grupos').update({
       posicao:           posicoes[linha.equipa_id] ?? 0,
       jogos_jogados:     t.jogos_jogados,
