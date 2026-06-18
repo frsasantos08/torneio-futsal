@@ -13,9 +13,11 @@ export async function POST(req: Request) {
   if (torneioId) equipasQ = equipasQ.eq('torneio_id', torneioId)
   const { data: equipasRows } = await equipasQ
   const slotToId: Record<string, string> = {}
+  const nomeToId: Record<string, string> = {}
   const idToNome: Record<string, string> = {}
   for (const e of equipasRows ?? []) {
     slotToId[e.slot] = e.id
+    if (e.nome) nomeToId[e.nome.trim()] = e.id
     idToNome[e.id] = e.nome ?? e.slot
   }
 
@@ -40,8 +42,8 @@ export async function POST(req: Request) {
   const totais: Record<string, ReturnType<typeof init>> = {}
 
   for (const j of jogos ?? []) {
-    const idA = j.equipa_a_id ?? slotToId[j.equipa_a_nome] ?? null
-    const idB = j.equipa_b_id ?? slotToId[j.equipa_b_nome] ?? null
+    const idA = j.equipa_a_id ?? slotToId[j.equipa_a_nome] ?? nomeToId[j.equipa_a_nome?.trim()] ?? null
+    const idB = j.equipa_b_id ?? slotToId[j.equipa_b_nome] ?? nomeToId[j.equipa_b_nome?.trim()] ?? null
     if (!idA || !idB) continue
 
     const pontosA = j.golos_a > j.golos_b ? 3 : j.golos_a === j.golos_b ? 1 : 0
