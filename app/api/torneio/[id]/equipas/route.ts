@@ -25,8 +25,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
   const updates: Record<string, unknown> = {}
   if (nome !== undefined) {
-    updates.nome = nome.trim() || null
-    updates.confirmada = (nome.trim().length > 0)
+    const nomeTrimmed = nome.trim()
+    const nomeReal = (nomeTrimmed && nomeTrimmed !== equipaAtual?.slot) ? nomeTrimmed : null
+    updates.nome = nomeReal
+    updates.confirmada = nomeReal !== null
   }
   if (confirmadaOverride !== undefined) {
     updates.confirmada = confirmadaOverride
