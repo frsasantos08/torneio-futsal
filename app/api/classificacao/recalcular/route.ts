@@ -27,11 +27,24 @@ export async function POST(req: Request) {
   const { data: jogos, error: jogosErr } = await jogosQ
   if (jogosErr) return NextResponse.json({ error: jogosErr.message }, { status: 500 })
 
-  // 3. Buscar linhas de classificação
+  // 3. Buscar linhas de classificação (auto-inicializar se não existirem)
   let linhasQ = supabase.from('classificacao_grupos').select('*')
   if (torneioId) linhasQ = linhasQ.eq('torneio_id', torneioId)
-  const { data: linhas, error: linhasErr } = await linhasQ
+  let { data: linhas, error: linhasErr } = await linhasQ
   if (linhasErr) return NextResponse.json({ error: linhasErr.message }, { status: 500 })
+
+  if ((!linhas || linhas.length === 0) && torneioId) {
+    for (const e of equipasRows ?? []) {
+      await supabase.from('classificacao_grupos').upsert({
+        equipa_id: e.id, grupo: e.grupo, torneio_id: torneioId,
+        jogos_jogados: 0, vitorias: 0, empates: 0, derrotas: 0,
+        golos_marcados: 0, golos_sofridos: 0, pontos: 0, posicao: 0,
+        nome: e.nome ?? e.slot,
+      }, { onConflict: 'equipa_id,torneio_id' })
+    }
+    const { data: novasLinhas } = await supabase.from('classificacao_grupos').select('*').eq('torneio_id', torneioId)
+    linhas = novasLinhas
+  }
 
   // 4. Calcular totais por equipa (resolver UUID por slot se equipa_a_id for null)
   const init = () => ({

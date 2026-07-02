@@ -43,6 +43,17 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Garantir linha de classificação para esta equipa
+  const { data: equipaFinal } = await supabase.from('equipas').select('grupo').eq('id', equipa_id).single()
+  if (equipaFinal?.grupo) {
+    await supabase.from('classificacao_grupos').upsert({
+      equipa_id, torneio_id: params.id, grupo: equipaFinal.grupo,
+      jogos_jogados: 0, vitorias: 0, empates: 0, derrotas: 0,
+      golos_marcados: 0, golos_sofridos: 0, pontos: 0, posicao: 0,
+      nome: (updates.nome as string | null) ?? null,
+    }, { onConflict: 'equipa_id,torneio_id', ignoreDuplicates: true })
+  }
+
   // Atualizar nome nos jogos usando o nome ANTIGO como critério de pesquisa
   if (nome !== undefined && equipaAtual?.slot) {
     const slot = equipaAtual.slot
