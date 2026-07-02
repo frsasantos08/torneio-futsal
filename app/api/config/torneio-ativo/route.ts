@@ -4,9 +4,16 @@ import { createServiceClient } from '@/lib/supabase'
 
 export async function GET() {
   const supabase = createServiceClient()
-  const { data } = await supabase
+
+  // Tentar primeiro torneio com status 'ativo'
+  const { data: ativo } = await supabase
+    .from('torneios').select('id').eq('status', 'ativo').order('data_inicio', { ascending: false }).limit(1).single()
+  if (ativo?.id) return NextResponse.json({ torneio_id: ativo.id })
+
+  // Fallback: config manual
+  const { data: cfg } = await supabase
     .from('configs').select('valor').eq('chave', 'torneio_ativo').single()
-  return NextResponse.json({ torneio_id: data?.valor ?? null })
+  return NextResponse.json({ torneio_id: cfg?.valor ?? null })
 }
 
 export async function POST(req: Request) {
