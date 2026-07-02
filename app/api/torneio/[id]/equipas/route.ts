@@ -51,7 +51,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       jogos_jogados: 0, vitorias: 0, empates: 0, derrotas: 0,
       golos_marcados: 0, golos_sofridos: 0, pontos: 0, posicao: 0,
       nome: (updates.nome as string | null) ?? null,
-    }, { onConflict: 'equipa_id,torneio_id', ignoreDuplicates: true })
+    }, { onConflict: 'equipa_id,torneio_id' })
   }
 
   // Atualizar nome nos jogos usando o nome ANTIGO como critério de pesquisa
